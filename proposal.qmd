@@ -38,7 +38,8 @@ Make sure to load the data and use inline code for some of this information.
 
 ## Questions
 
-The two questions you want to answer.
+Which NEO candidates are considered hazardous?
+Out of hazardous NEO's, which categories of body do they belong to?
 
 ## Analysis plan
 
