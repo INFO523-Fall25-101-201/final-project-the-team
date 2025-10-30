@@ -18,12 +18,17 @@ Jupyter Notebook
 -   **Orbit Class**     : Near Earth orbital class *
 
 *
-| Orbit Class             | Description                                | Key Orbital Traits        |
-| ----------------------- | ------------------------------------------ | ------------------------- |
-| **AMO (Amor)**          | Approaches but doesn’t cross Earth’s orbit | 1.017 AU < q < 1.3 AU     |
-| **APO (Apollo)**        | Crosses Earth’s orbit, long-period orbit   | a > 1 AU and q < 1.017 AU |
-| **ATE (Aten)**          | Crosses Earth’s orbit, short-period orbit  | a < 1 AU and Q > 0.983 AU |
-| **IEO (Atira/Apohele)** | Orbit entirely inside Earth’s              | Q < 0.983 AU              |
+|  Group  |  Definition  |  Description  |
+|:--------|:------------:|:--------------|
+| NECs    | q<1.3au, P<200yrs  |  Near-Earth Comets |
+| NEAs    | q<1.3au     |  Near-Earth Asteroids |
+| Atiras | a<1.0 au, Q<0.983 au | NEAs whose orbits are contained entirely with the orbit of the Earth (named after asteroid 163693 Atira) |
+| Atens  | a<1.0 au, Q>0.983 au | Earth-crossing NEAs with semi-major axes smaller than Earth's (named after asteroid 2062 Aten) |
+| Apollos | a>1.0 au, q<1.017 au | Earth-crossing NEAs with semi-major axes larger than Earth's (named after asteroid 1862 Apollo) |
+| Amors  | a>1.0 au, 1.017<q<1.3 au | Earth-approaching NEA's with orbits exterior to Earth's but interior to Mars' ( named aftger asteroid 1221 Amor) |
+| PHAs   | MOID<=0.05 au, H<=22.0  | Potentially Hazardous Asteroids: NEAs whose minimum Orbit Interestion Distance (MOID) with the Earth is 0.05 au or less and whose absolute magnitude (H) is 22.0 or brighter |  
+
+(q = perihelion distance, Q = aphelion distance, a = semi-major axis)
 
 ## Data Types:
 
