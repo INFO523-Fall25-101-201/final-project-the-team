@@ -56,3 +56,10 @@ Out of hazardous NEO's, which categories of body do they belong to?
 2. Explore features such as size, velocity, and orbit.
 3. Conduct ML trials to find the best fit models (Random Forest, XGBoost, KNN) to classify hazardous asteroids or the group
 4. 2D/3D visualize orbit paths and distribution of NEOs utilizing Streamlit
+
+Tentative Schedule:
+Week 1: Finish preprocessing the data (Trevor) and revise the proposal (Kylie)
+Week 2: Build initial models and decide which ones to proceed with (both)
+Week 3: Refine the selected model and begin group cateogry model (both)
+Week 4: Finalize second models, start creating visuals (both)
+Week 5-6: Refine code, create and rehearse presentation (both)
