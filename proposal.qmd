@@ -23,6 +23,7 @@ jupyter: python3
 #| label: load-pkgs
 #| message: false
 import numpy as np
+import pandas as pd
 ```
 
 ## Dataset
@@ -30,11 +31,13 @@ import numpy as np
 ```{python}
 #| label: load-dataset
 #| message: false
+df = pd.read_csv('./data/kaggle_Discovery_Statistics.csv')
+print(df.head())
+df.info()
+df.shape
 ```
 
-A brief description of your dataset including its provenance, dimensions, etc. as well as the reason why you chose this dataset.
-
-Make sure to load the data and use inline code for some of this information.
+These data are pulled from Kaggle, showing NASA NEO data. NASA documents them to determine any potential hazards. The variables represent the size, velocity, and orbital parameters, which will be used during model creation. We selected this dataset due to it being a large dataset sourced from NASA's official website.
 
 ## Questions
 
