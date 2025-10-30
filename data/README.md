@@ -1,7 +1,7 @@
 # Data
 - **kaggle_Discovery_statistics**: This dataset was downloaded from Kaggle NASA NEO (Near-Earth Object) Dataset. This dataset contains data on NEOs to include name, designation, absolute magnitudes, estimated diameters, and hazard assessments. sourced from NASA.  
 
-# Codebook for [chosen] Dataset
+# Codebook for [kaggle_Discovery_statistics] Dataset
 Jupyter Notebook
 
 ## Variable Names and Descriptions:
