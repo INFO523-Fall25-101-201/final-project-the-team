@@ -1,6 +1,6 @@
 ---
-title: "Proposal title"
-subtitle: "Proposal"
+title: "Classifying Near Earth Objects"
+subtitle: "Detecting and Classsifying Hazardous NEO's"
 author: 
   - name: "The Team - Clinton, Kylie and Snedden, Trevor"
     affiliations:
