@@ -1,8 +1,8 @@
 ---
-title: "Project Title"
+title: "Classifying Near Earth Objects"
 subtitle: "INFO 523 - Final Project"
 author: 
-  - name: "Team name - Team member 1, Team member 2,..."
+  - name: "Kylie Clinton, Trevor Snedden"
     affiliations:
       - name: "College of Information Science, University of Arizona"
 description: "Project description"
