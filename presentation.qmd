@@ -1,7 +1,7 @@
 ---
 title: "Project title"
-subtitle: "INFO 523 - Summer 2025 - Final Project"
-author: "Author names"
+subtitle: "INFO 523 - Fall 2025 - Final Project"
+author: "Kylie Clinton, Trevor Sneddon"
 title-slide-attributes:
   data-background-image: images/watercolour_sys02_img34_teacup-ocean.jpg
   data-background-size: stretch
@@ -16,14 +16,26 @@ jupyter: python3
 execute:
   echo: false
 ---
-
+## Setup
 ```{python}
 #| label: load-packages
-#| include: false
+#| message: false
 
 # Load packages here
 import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score, confusion_matrix, accuracy_score, classification_report
+from sklearnex import patch_sklearn
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+patch_sklearn
+
+import matplotlib.pyplot as plt
 import seaborn as sns
+%matplotlib inline
 
 ```
 
@@ -41,15 +53,44 @@ plt.rcParams['savefig.dpi'] = 300
 plt.rcParams['figure.figsize'] = (6, 6 * 0.618)
 ```
 
-```{python}
-#| label: load-data
-#| include: false
-# Load data in Python
-mtcars = sns.load_dataset('mpg').dropna()  # mtcars dataset is similar to the mpg dataset from seaborn
-mtcars['speed'] = mtcars['horsepower'] / mtcars['weight']
+# Introduction to the Data
+-   What the data is
+-   Where we acquired it
+-   What the data means
 
-penguins = sns.load_dataset('penguins').dropna()
+::: panel-tabset
+## Read in the Data
+```{python}
+df = pd.read_csv('./data/kaggle_neo.csv')
+df.head()
 ```
+
+## Info
+```{python}
+df.info()
+```
+
+## Describe
+```{python}
+df.describe()
+```
+
+## Null Values
+```{python}
+df.isna().sum()
+```
+
+## Features
+-   **Designation**     : Designation of NEO object
+-   **Discovery Date**  : Date of Discovery
+-   **H (mag)**         : Absolute Magnitude
+-   **MOID (au)**       : Minimum Orbit Intersection Distance with Earth
+-   **q (au)**          : perihelion distance
+-   **Q (au)**          : aphelion distance
+-   **period (yr)**     : Orbital Period (one full rotation)
+-   **i (deg)**         : Orbital Inclination, tilt of orbital plane relative to earch in degrees
+-   **PHA**             : Potentially hazardous (target variable)
+-   **Orbit Class**     : Near Earth orbital class *
 
 # Using Quarto for presentations
 
@@ -63,7 +104,7 @@ penguins = sns.load_dataset('penguins').dropna()
 
 You can use plain text
 
-::: columns
+::::: columns
 ::: {.column width="40%"}
 -   or bullet points[^1]
 :::
@@ -71,7 +112,7 @@ You can use plain text
 ::: {.column width="60%"}
 or in two columns
 :::
-:::
+:::::
 
 [^1]: And add footnotes
 
@@ -108,7 +149,7 @@ plt.show()
 
 ## Plot and text
 
-::: columns
+::::: columns
 ::: {.column width="50%"}
 -   Some text
 
@@ -124,7 +165,7 @@ sns.boxplot(data=penguins, x='bill_length_mm', y='species', hue='species', ax=ax
 plt.show()
 ```
 :::
-:::
+:::::
 
 # A new section...
 
