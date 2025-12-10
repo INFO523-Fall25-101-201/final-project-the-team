@@ -3,3 +3,5 @@ quarto
 jupyter
 pandas
 numpy
+sklearn
+matplotlib.pyplot
