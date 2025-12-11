@@ -4,3 +4,6 @@
 .Ruserdata
 
 /.quarto/
+
+**/*.quarto_ipynb
+project_sample.ipynb

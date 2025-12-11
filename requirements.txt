@@ -1,2 +1,6 @@
+quarto
 jupyter
-nbformat
+pandas
+numpy
+scikit-learn
+matplotlib
