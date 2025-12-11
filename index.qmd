@@ -20,4 +20,8 @@ jupyter: python3
 
 ## Abstract
 
-Add project abstract here.
+This project aims to classify Near-Earth Objects (NEOs) into their dynamical orbit groups using orbital data from the NASA NEO dataset hosted on Kaggle. After acquiring the dataset, a preprocessing pipeline was developed to clean missing values, convert categorical fields, and isolate the orbital elements most relevant to NEO classification, including semimajor axis, eccentricity, inclination, perihelion distance, aphelion distance, and orbital period. These features were selected because they directly define NASA’s established criteria for grouping NEOs into Amor, Apollo, Aten, and Atira classes.
+
+To determine an effective classification approach, the project evaluated three supervised machine learning models imported from the Scikit-Learn library. Testing began with **Logistic Regression,** which served as an initial baseline model. Following the regression model, a **K-Nearest Neighbors (KNN)** model was tested, which showed improved flexibility but was sensitive to feature scaling and class imbalance. Finally, a **RandomForestClassifier** was trained and tuned, leveraging ensemble decision trees to model nonlinear relationships and interactions among orbital elements. The Random Forest Classifier was able to consistently achieve the highest accuracy and the most balanced class-level performance, particularly in distinguishing groups with overlapping parameter ranges.
+
+Results indicate that the RandomForestClassifier provides the most reliable and robust method for orbit-class prediction in this dataset, as well as classifying NEO type. Its strong performance, resilience to noise, and clear feature importance rankings make it an ideal model choice for future extensions, including integrating additional physical characteristics or expanding the dataset using NASA’s Small-Body Database API.
