@@ -124,6 +124,7 @@ sns.set_style('whitegrid')
 ax = sns.countplot(filtered_set, x='Orbit_Class', hue='PHA', palette=['green', 'red'])
 ax.bar_label(ax.containers[0])
 ax.bar_label(ax.containers[1])
+plt.xticks(rotation=45)
 plt.title("PHA's per Orbit Class")
 plt.show()
 # further cleaning
