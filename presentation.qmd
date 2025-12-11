@@ -1,7 +1,7 @@
 ---
 title: "Classifying Near Earth Objects"
 subtitle: "INFO 523 - Fall 2025 - Final Project"
-author: "Kylie Clinton, Trevor Sneddon"
+author: "Kylie Clinton, Trevor Snedden"
 title-slide-attributes:
   data-background-image: images/watercolour_sys02_img34_teacup-ocean.jpg
   data-background-size: stretch
