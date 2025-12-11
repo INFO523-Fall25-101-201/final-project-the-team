@@ -277,19 +277,6 @@ plt.xlabel('Predicted Labels - Binary')
 plt.ylabel('True Labels - Binary')
 plt.show()
 ```
-
-## PCA
-
-```{python}
-#| echo: false
-#PCA
-y_pred_p = model_k.predict(X)
-X_processed = model_k.named_steps["prep"].fit_transform(X)
-pca = PCA(n_components=2)
-X_pca = pca.fit_transform(X_processed)
-y_pred_p = model.predict(X)
-plt.scatter(X_pca[:,0], X_pca[:,1], c=y_pred_p, cmap="viridis")
-```
 :::
 
 # Final Models
