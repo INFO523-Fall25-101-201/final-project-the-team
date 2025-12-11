@@ -10,6 +10,8 @@ title-slide-attributes:
 format:
   revealjs:
     theme:  ['data/customtheming.scss']
+    scrollable: true
+    smaller: true
   
 editor: visual
 jupyter: python3
@@ -200,6 +202,12 @@ plt.show()
 ::: panel-tabset
 ## Model
 
+-   Expect the model to run quickly
+-   Handles some multicollinearity
+-   Good initial model
+-   Risk of underfitting to the data
+-   Requires feature scaling
+
 ```{python}
 #| code-fold: true
 X = filtered_set.drop(['PHA', 'binary_PHA'], axis=1)
@@ -245,6 +253,11 @@ plt.show()
 ::: panel-tabset
 ## Model
 
+-   Expect the model to run quickly
+-   Lazy learning algorithm makes training time negligible
+-   Sensitive to noisy data
+-   Requires feature scaling
+-   Class imbalance in training affects testing predictions
 ```{python}
 #| code-fold: true
 preprocess = ColumnTransformer(
@@ -287,6 +300,11 @@ plt.show()
 ::: panel-tabset
 ## Model
 
+-   Expect model to have high accuracy
+-   Overfitting less of an issue
+-   Offers feature importance
+-   Can be less interpretable
+-   Manages correlated features well
 ```{python}
 #| code-fold: true
 feature_cols = ['H_(mag)', 'MOID_(au)',
@@ -325,6 +343,7 @@ for col, imp in sorted(zip(feature_cols, importances), key=lambda x: -x[1]):
 
 ## Confusion Matrix
 
+-   This model performs well. However, it appears as though the initial model is likely overfit and requires some hyperparameter tuning.
 ```{python}
 #| echo: false
 cm = confusion_matrix(y_test, y_pred)
@@ -349,6 +368,7 @@ plt.show()
 
 ## Hyperparameter Tuning
 
+-   While the tuning process would lower accuracy and other metrics, it reduces the risk of the model being overfit to the training data.
 ```{python}
 #| code-fold: true
 param_grid_binary = {
@@ -388,6 +408,7 @@ print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard
 
 ## Tuning Confusion Matrix
 
+-   The model no longer acts as overfit as before, yet still performs better than the earlier models.
 ```{python}
 #| echo: false
 cm = confusion_matrix(y_test, yb_pred)
@@ -403,11 +424,12 @@ plt.show()
 ```
 :::
 
-## Classification Model
+## Group Classification Model
 
 ::: panel-tabset
 ## Model
 
+-   The classification model also runs the risk of being overfit.
 ```{python}
 #| code-fold: true
 le = LabelEncoder()
@@ -463,6 +485,8 @@ plt.show()
 
 ## Hyperparameter Tuning
 
+-   Additional hyperparameter tuning was performed to lower the overfit metrics the original model showed.
+
 ```{python}
 #| code-fold: true
 param_grid_multi = {
@@ -508,3 +532,9 @@ plt.show()
 :::
 
 # Conclusion
+
+## Conclusion
+
+-   While all models overall performed well, our decision to train and tune the Random Forest model resulted in an excellent model
+-   We feel confident our model could handle new data and predict any potential hazards well
+-   We also feel confident in our classification model's ability to group NEOs in their proper class groups
