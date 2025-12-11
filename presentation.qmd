@@ -1,5 +1,5 @@
 ---
-title: "Project title"
+title: "Classifying Near Earth Objects"
 subtitle: "INFO 523 - Fall 2025 - Final Project"
 author: "Kylie Clinton, Trevor Sneddon"
 title-slide-attributes:
