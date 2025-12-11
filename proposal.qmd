@@ -31,7 +31,7 @@ import pandas as pd
 ```{python}
 #| label: load-dataset
 #| message: false
-df = pd.read_csv('./data/kaggle_Discovery_Statistics.csv')
+df = pd.read_csv('./data/kaggle_neo.csv')
 print(df.head())
 df.info()
 df.shape
