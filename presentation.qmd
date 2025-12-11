@@ -102,12 +102,16 @@ df.isna().sum()
 
 ```{python}
 #| code-fold: true
+
+#count hazardous and non-hazardous non-null rows
 not_na_df =df[df['PHA'].notna()]
 # not_na_df.info()
 haz = not_na_df[not_na_df['PHA']=='Y'].count()
 not_haz = not_na_df[not_na_df['PHA']=='N'].count()
 # print(haz)
 # print(not_haz)
+
+# clean and drop columns
 filtered_set = not_na_df.drop(columns='Discovery Date (YYYY-MM-DD)') #data just taking up space
 filtered_set.columns
 # lower column names and remove spaces
@@ -122,6 +126,7 @@ filtered_set['Orbit_Class'].unique()
 haz = filtered_set[filtered_set['PHA']=='Y']
 non_haz = filtered_set[filtered_set['PHA']=='N']
 targets = filtered_set.PHA
+#create graphic of haz and non-haz NEOs
 sns.set_style('whitegrid')
 ax = sns.countplot(filtered_set, x='Orbit_Class', hue='PHA', palette=['green', 'red'])
 ax.bar_label(ax.containers[0])
@@ -220,13 +225,15 @@ preprocess = ColumnTransformer(
         ("num", StandardScaler(), num_cols),
         ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
 )
+#pipeline for model to run with preprocessing
 model = Pipeline([
     ("prep", preprocess),
     ("logr", LogisticRegression())
 ])
+# split train and test sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=123)
 model.fit(X_train, y_train)
-
+#run model performance metrics
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy of Logistic Regression: {accuracy * 100:.2f}")
@@ -260,18 +267,21 @@ plt.show()
 -   Class imbalance in training affects testing predictions
 ```{python}
 #| code-fold: true
+#| #preprocessor
 preprocess = ColumnTransformer(
     transformers=[
         ("num", StandardScaler(), num_cols),
         ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
 )
+#pipeline
 model_k = Pipeline([
     ("prep", preprocess),
     ("knn", KNeighborsClassifier(n_neighbors=2))
 ])
+#split train and test set
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=123)
 model_k.fit(X_train, y_train)
-
+#model performance metrics
 y_pred_k = model_k.predict(X_test)
 accuracy_k = accuracy_score(y_test, y_pred_k)
 print(f"Accuracy of KNN Regression: {accuracy_k * 100:.2f}")
@@ -312,13 +322,14 @@ feature_cols = ['H_(mag)', 'MOID_(au)',
                 'period_(yr)', 'i_(deg)',
                 'a', 'e'
 ]
-
+#train and test set
 X = filtered_set[feature_cols].values.astype(np.float32)
 y = (filtered_set['PHA'] == "Y").astype(int).values # 0 or 1
 
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=55, stratify=y
 )
+#model hyperparameters
 rf = RandomForestClassifier(
     n_estimators=500,
     class_weight='balanced',
@@ -327,12 +338,12 @@ rf = RandomForestClassifier(
 )
 
 rf.fit(X_train, y_train)
-
+#model performance metrics
 rf_probs = rf.predict_proba(X_test)[:, 1]
 rf_auc = roc_auc_score(y_test, rf_probs)
 
 print(f'Random Forest ROC AUC: {rf_auc:.4f}')
-
+#feature importance
 importances = rf.feature_importances_
 for col, imp in sorted(zip(feature_cols, importances), key=lambda x: -x[1]):
     print(f"{col:<12}: {imp:.4f}")
@@ -371,6 +382,7 @@ plt.show()
 -   While the tuning process would lower accuracy and other metrics, it reduces the risk of the model being overfit to the training data.
 ```{python}
 #| code-fold: true
+#| #parameter grid
 param_grid_binary = {
     "n_estimators": [200, 400, 600],
     "max_depth": [50,75,100],
@@ -382,7 +394,7 @@ param_grid_binary = {
 }
 
 rf = RandomForestClassifier(random_state=55, n_jobs=-1)
-
+#Grid search cross validation with hyperparameters
 grid_binary = GridSearchCV(
     rf,
     param_grid=param_grid_binary,
@@ -393,10 +405,10 @@ grid_binary = GridSearchCV(
 )
 
 grid_binary.fit(X_train, y_train)
-
+#print best parameters and score
 print("Best params (Binary PHA):", grid_binary.best_params_)
 print("Best cross-val ROC AUC:", grid_binary.best_score_)
-
+#best model hyperparameters and associated model metrics
 best_rf_binary = grid_binary.best_estimator_
 yb_pred = best_rf_binary.predict(X_test)
 rf_probs = best_rf_binary.predict_proba(X_test)[:, 1]
@@ -432,18 +444,19 @@ plt.show()
 -   The classification model also runs the risk of being overfit.
 ```{python}
 #| code-fold: true
+#encode labels
 le = LabelEncoder()
 
 filtered_set['orbit_label'] = le.fit_transform(filtered_set['Orbit_Class'])
 
 le.classes_
-
+#new train and test set
 X = filtered_set[feature_cols]
 y = filtered_set['orbit_label']
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=55, stratify=y
 )
-
+#model with initial hyperparameters
 rf = RandomForestClassifier(
     n_estimators=500,
     max_depth=None,
@@ -453,7 +466,7 @@ rf = RandomForestClassifier(
 )
 
 rf.fit(X_train, y_train)
-
+#model metrics
 y_pred = rf.predict(X_test)
 
 acc = accuracy_score(y_test, y_pred)
@@ -489,6 +502,7 @@ plt.show()
 
 ```{python}
 #| code-fold: true
+# model hyperparameters grid
 param_grid_multi = {
     "n_estimators": [200, 400, 600],
     "max_depth": [40,60,80],
@@ -499,7 +513,7 @@ param_grid_multi = {
     "class_weight": ["balanced"]
 }
 rf_multi = RandomForestClassifier(random_state=55, n_jobs=-1)
-
+# grid search cross validation on the hyperparameters grid
 grid_multi = GridSearchCV(
     rf_multi,
     param_grid=param_grid_multi,
@@ -509,6 +523,7 @@ grid_multi = GridSearchCV(
     verbose=1
 )
 grid_multi.fit(X_train, y_train)
+# tuning best model metrics outputs
 best_rf_multi = grid_multi.best_estimator_
 y_pred_multi = best_rf_multi.predict(X_test)
 print("Best params (Multi-class Orbit):", grid_multi.best_params_)
