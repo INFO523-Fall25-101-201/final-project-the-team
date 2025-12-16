@@ -168,6 +168,7 @@ model = Pipeline([
     ("logr", LogisticRegression())
 ])
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=55)
+model.fit(X_train, y_train)
 y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 print(f"Accuracy of Logistic Regression: {accuracy * 100:.2f}")
@@ -258,7 +259,11 @@ print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard
 
 # need to label encode orbit classes
 le = LabelEncoder()
-
+feature_cols = ['H_(mag)', 'MOID_(au)',
+                'q_(au)', 'Q_(au)',
+                'period_(yr)', 'i_(deg)',
+                'a', 'e'
+]
 filtered_set['orbit_label'] = le.fit_transform(filtered_set['Orbit_Class'])
 
 le.classes_
