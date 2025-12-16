@@ -265,6 +265,7 @@ plt.show()
 -   Sensitive to noisy data
 -   Requires feature scaling
 -   Class imbalance in training affects testing predictions
+
 ```{python}
 #| code-fold: true
 #| #preprocessor
@@ -315,6 +316,7 @@ plt.show()
 -   Offers feature importance
 -   Can be less interpretable
 -   Manages correlated features well
+
 ```{python}
 #| code-fold: true
 feature_cols = ['H_(mag)', 'MOID_(au)',
@@ -355,6 +357,7 @@ for col, imp in sorted(zip(feature_cols, importances), key=lambda x: -x[1]):
 ## Confusion Matrix
 
 -   This model performs well. However, it appears as though the initial model is likely overfit and requires some hyperparameter tuning.
+
 ```{python}
 #| echo: false
 cm = confusion_matrix(y_test, y_pred)
@@ -380,6 +383,7 @@ plt.show()
 ## Hyperparameter Tuning
 
 -   While the tuning process would lower accuracy and other metrics, it reduces the risk of the model being overfit to the training data.
+
 ```{python}
 #| code-fold: true
 #| #parameter grid
@@ -421,6 +425,7 @@ print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard
 ## Tuning Confusion Matrix
 
 -   The model no longer acts as overfit as before, yet still performs better than the earlier models.
+
 ```{python}
 #| echo: false
 cm = confusion_matrix(y_test, yb_pred)
@@ -442,6 +447,7 @@ plt.show()
 ## Model
 
 -   The classification model also runs the risk of being overfit.
+
 ```{python}
 #| code-fold: true
 #encode labels
