@@ -13,5 +13,8 @@ Final project repo for INFO 523 - Fall 2025.
 - requirements.txt: Contains python libraries used throughout the project
 - data: Contains data used in the project
 
+## Website
+To view the website, use this [link](https://info523-fall25-101-201.github.io/final-project-the-team/)
+
 #### Disclosure:
 Derived from the original data viz course by Mine Çetinkaya-Rundel @ Duke University
