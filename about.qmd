@@ -7,6 +7,6 @@ jupyter: python3
 
 This project was developed by **The Team** For [INFO 523 - Data Mining and Discovery](https://datamineaz.org/) at the University of Arizona, taught by Dr. Greg Chism. The team is comprised of the following team members.
 
--   Trevor Sneddon: One sentence description of Team member 1 (e.g., year, major, etc.).
+-   Trevor Snedden: Trevor is a second semester MSDS student working as a graduate research assistant and the Steward Observatory.
 
 -   Kylie Clinton: Kylie is a first-semester MSDS student working full-time as a Data Analyst.
