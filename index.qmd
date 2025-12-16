@@ -217,6 +217,11 @@ param_grid_binary = {
     "bootstrap": [True, False],
     "class_weight": ["balanced"]
 }
+feature_cols = ['H_(mag)', 'MOID_(au)',
+                'q_(au)', 'Q_(au)',
+                'period_(yr)', 'i_(deg)',
+                'a', 'e'
+]
 X = filtered_set[feature_cols].values.astype(np.float32)
 y = (filtered_set['PHA'] == "Y").astype(int).values # 0 or 1
 
@@ -257,11 +262,7 @@ print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard
 
 # need to label encode orbit classes
 le = LabelEncoder()
-feature_cols = ['H_(mag)', 'MOID_(au)',
-                'q_(au)', 'Q_(au)',
-                'period_(yr)', 'i_(deg)',
-                'a', 'e'
-]
+
 filtered_set['orbit_label'] = le.fit_transform(filtered_set['Orbit_Class'])
 
 le.classes_
