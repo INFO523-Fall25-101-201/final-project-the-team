@@ -154,6 +154,8 @@ The models were evaluated using with a mixture of metrics with accuracy, F1 scor
 ## Results
 
 ``` {python}
+X = filtered_set.drop(['PHA', 'binary_PHA'], axis=1)
+y = filtered_set['binary_PHA']
 cat_cols = X.select_dtypes(include=['object']).columns
 num_cols = X.select_dtypes(include=['number']).columns
 preprocess = ColumnTransformer(
