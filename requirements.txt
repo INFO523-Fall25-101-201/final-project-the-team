@@ -1,5 +1,5 @@
-python3
-quarto
 jupyter
 pandas
 numpy
+scikit-learn
+matplotlib

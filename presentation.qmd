@@ -1,7 +1,7 @@
 ---
-title: "Project title"
-subtitle: "INFO 523 - Summer 2025 - Final Project"
-author: "Author names"
+title: "Classifying Near Earth Objects"
+subtitle: "INFO 523 - Fall 2025 - Final Project"
+author: "Kylie Clinton, Trevor Snedden"
 title-slide-attributes:
   data-background-image: images/watercolour_sys02_img34_teacup-ocean.jpg
   data-background-size: stretch
@@ -10,158 +10,552 @@ title-slide-attributes:
 format:
   revealjs:
     theme:  ['data/customtheming.scss']
+    scrollable: true
+    smaller: true
   
 editor: visual
 jupyter: python3
 execute:
-  echo: false
+  echo: true
 ---
 
-```{python}
-#| label: load-packages
-#| include: false
-
-# Load packages here
-import pandas as pd
-import seaborn as sns
-
-```
+## Setup {.smaller}
 
 ```{python}
 #| label: setup
-#| include: false
-#| 
-# Set up plot theme and figure resolution
-sns.set_theme(style="whitegrid")
-sns.set_context("notebook", font_scale=1.1)
+#| message: false
+
+# Load packages here
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.compose import ColumnTransformer
+from sklearn.metrics import roc_auc_score, confusion_matrix, accuracy_score, f1_score, classification_report
+from sklearn.decomposition import PCA
+#from sklearnex import patch_sklearn
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+#patch_sklearn
 
 import matplotlib.pyplot as plt
-plt.rcParams['figure.dpi'] = 300
-plt.rcParams['savefig.dpi'] = 300
-plt.rcParams['figure.figsize'] = (6, 6 * 0.618)
+import seaborn as sns
+%matplotlib inline
+
+sns.set_theme(style="whitegrid")
+sns.set_context("notebook", font_scale=1.1)
 ```
 
-```{python}
-#| label: load-data
-#| include: false
-# Load data in Python
-mtcars = sns.load_dataset('mpg').dropna()  # mtcars dataset is similar to the mpg dataset from seaborn
-mtcars['speed'] = mtcars['horsepower'] / mtcars['weight']
+## Introduction to the Data {.smaller}
 
-penguins = sns.load_dataset('penguins').dropna()
+-   These data describes features of Near-Earth Objects (NEOs), which are asteroids and comets within 1.3 Astronomical Units of Earth
+-   Data comes from Kaggle, which sources the dataset from NASA NEO data
+-   Features in the data show features such as size, velocity and orbital parameters
+-   Target features in our models are the class of NEO and if the NEO is hazardous (meaning there is a risk of damage to satellites, the ISS, the Earth, etc.)
+-   Understanding NEOs and potential hazards allows for preparation and action for the risks
+
+## EDA {.smaller}
+
+::: panel-tabset
+## Read in the Data
+
+```{python}
+df = pd.read_csv('./data/kaggle_neo.csv')
+df.head()
 ```
 
-# Using Quarto for presentations
-
-## Quarto
-
--   The presentation is created using the Quarto CLI
-
--   `##` sets the start of a new slide
-
-## Layouts
-
-You can use plain text
-
-::: columns
-::: {.column width="40%"}
--   or bullet points[^1]
-:::
-
-::: {.column width="60%"}
-or in two columns
-:::
-:::
-
-[^1]: And add footnotes
-
--   like
-
--   this
-
-## Code
+## Info
 
 ```{python}
-from sklearn.linear_model import LinearRegression
-import statsmodels.api as sm
-import pandas as pd
-
-# Fit a linear regression model
-X = mtcars[['speed']]
-y = mtcars['mpg']
-model = LinearRegression().fit(X, y)
-
-# Summary of the model
-X2 = sm.add_constant(X)
-est = sm.OLS(y, X2)
-est2 = est.fit()
-print(est2.summary())
+df.info()
 ```
 
-## Plots
+## Describe
 
 ```{python}
-penguins['species'] = penguins['species'].apply(lambda x: "Adelie" if x == "Adelie" else "Other")
-sns.scatterplot(data=penguins, x='flipper_length_mm', y='body_mass_g', hue='species')
+df.describe()
+```
+
+## Null Values
+
+```{python}
+df.isna().sum()
+```
+
+## Features
+
+-   **Designation** : Designation of NEO object
+-   **Discovery Date** : Date of Discovery
+-   **H (mag)** : Absolute Magnitude
+-   **MOID (au)** : Minimum Orbit Intersection Distance with Earth
+-   **q (au)** : perihelion distance
+-   **Q (au)** : aphelion distance
+-   **period (yr)** : Orbital Period (one full rotation)
+-   **i (deg)** : Orbital Inclination, tilt of orbital plane relative to earth in degrees
+-   **PHA** : Potentially hazardous (target variable)
+-   **Orbit Class** : Near Earth orbital class
+
+## Clean Data
+
+```{python}
+#| code-fold: true
+
+#count hazardous and non-hazardous non-null rows
+not_na_df =df[df['PHA'].notna()]
+# not_na_df.info()
+haz = not_na_df[not_na_df['PHA']=='Y'].count()
+not_haz = not_na_df[not_na_df['PHA']=='N'].count()
+# print(haz)
+# print(not_haz)
+
+# clean and drop columns
+filtered_set = not_na_df.drop(columns='Discovery Date (YYYY-MM-DD)') #data just taking up space
+filtered_set.columns
+# lower column names and remove spaces
+filtered_set.columns = [col.replace(' ', '_') for col in filtered_set.columns]
+filtered_set['binary_PHA'] = pd.get_dummies(filtered_set['PHA'], dtype=int)['Y']
+filtered_set = filtered_set.copy()
+filtered_set['Designation'] = filtered_set['Designation'].str.extract(r'\((?:\d{4}\s)?([A-Z]+\d+)\)')
+# print(filtered_set.head())
+dups = filtered_set
+filtered_set.columns
+filtered_set['Orbit_Class'].unique()
+haz = filtered_set[filtered_set['PHA']=='Y']
+non_haz = filtered_set[filtered_set['PHA']=='N']
+targets = filtered_set.PHA
+#create graphic of haz and non-haz NEOs
+sns.set_style('whitegrid')
+ax = sns.countplot(filtered_set, x='Orbit_Class', hue='PHA', palette=['green', 'red'])
+ax.bar_label(ax.containers[0])
+ax.bar_label(ax.containers[1])
+plt.xticks(rotation=45)
+plt.title("PHA's per Orbit Class")
+plt.show()
+# further cleaning
+filtered_set = filtered_set[filtered_set['Orbit_Class'].isin(['Amor', 'Apollo', 'Aten'])].copy()
+filtered_set['a'] = (filtered_set['Q_(au)'] + filtered_set['q_(au)'])/2
+filtered_set['e'] = (filtered_set['Q_(au)'] - filtered_set['q_(au)']) / (filtered_set['Q_(au)'] + filtered_set['q_(au)'])
+filtered_set.columns
+filtered_set[['a','e']].head()
+```
+
+## NEO Orbit Class Map
+
+```{python}
+#| label: class map
+#| code-fold: true
+
+palette = sns.color_palette("husl", filtered_set["Orbit_Class"].nunique())
+sns.scatterplot(
+    data=filtered_set,
+    x='a', y='e',
+    hue='Orbit_Class',
+    palette=palette,
+    alpha=0.8,
+    legend='full'
+)
+
+#need an overlay x isn't showing properly
+sns.scatterplot(
+    data=filtered_set[filtered_set['PHA']=='Y'],
+    x='a', y='e',
+    s=70,
+    marker='X',
+    hue= 'Orbit_Class',
+    palette=palette,
+    label='PHA= Y',
+    legend=False,
+    edgecolor='black',
+    linewidth=0.3
+)
+
+# Earth orbit reference
+plt.axvline(1, color='gray', linestyle='--', linewidth=1)
+plt.text(1.02, 0.02, "Earth Orbit (1 AU)", rotation=90, va='bottom', ha='left', fontsize=9)
+
+# q = 1.017 AU boundary curve
+a_line = np.linspace(0.5, 3, 300)
+e_line = 1 - 1.017 / a_line
+plt.plot(a_line, e_line, color='black', linestyle='--', linewidth=1)
+plt.text(2.8, 0.65, "q = 1.017 AU (Earth-crossing limit)", ha='right', va='center', fontsize=9)
+
+# Labels and limits
+plt.xlabel("Semi-major Axis (a, AU)")
+plt.ylabel("Eccentricity (e)")
+plt.title("Near-Earth Object Orbit Class Map")
+plt.xlim(0.5, 3)
+plt.ylim(0, 1)
+plt.legend(title="Orbit Class", fontsize='small')
+plt.show()
+```
+:::
+
+# Questions and Goals
+
+## Goals
+
+-   Classify NEO as hazardous or non-hazardous
+-   Group NEO into categories of bodies
+
+# Initial Model Creation
+
+## Logistic Regression
+
+::: panel-tabset
+## Model
+
+-   Expect the model to run quickly
+-   Handles some multicollinearity
+-   Good initial model
+-   Risk of underfitting to the data
+-   Requires feature scaling
+
+```{python}
+#| code-fold: true
+X = filtered_set.drop(['PHA', 'binary_PHA'], axis=1)
+y = filtered_set['binary_PHA']
+#preprocess so object labels get encoded
+cat_cols = X.select_dtypes(include=['object']).columns
+num_cols = X.select_dtypes(include=['number']).columns
+preprocess = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), num_cols),
+        ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
+)
+#pipeline for model to run with preprocessing
+model = Pipeline([
+    ("prep", preprocess),
+    ("logr", LogisticRegression())
+])
+# split train and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=123)
+model.fit(X_train, y_train)
+#run model performance metrics
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy of Logistic Regression: {accuracy * 100:.2f}")
+f1 = f1_score(y_test, y_pred, average='weighted')
+print(f"F1 Score: {f1:.2f}")
+```
+
+## Confusion Matrix
+
+```{python}
+#| code-fold: true
+conf = confusion_matrix(y_test, y_pred)
+
+sns.heatmap(conf, annot=True, cbar=False, cmap = 'Blues')
+plt.title('Confusion Matrix Heatmap')
+plt.xlabel('Predicted Labels - Binary')
+plt.ylabel('True Labels - Binary')
+plt.show()
+```
+:::
+
+## KNN
+
+::: panel-tabset
+## Model
+
+-   Expect the model to run quickly
+-   Lazy learning algorithm makes training time negligible
+-   Sensitive to noisy data
+-   Requires feature scaling
+-   Class imbalance in training affects testing predictions
+
+```{python}
+#| code-fold: true
+#| #preprocessor
+preprocess = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), num_cols),
+        ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
+)
+#pipeline
+model_k = Pipeline([
+    ("prep", preprocess),
+    ("knn", KNeighborsClassifier(n_neighbors=2))
+])
+#split train and test set
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state=123)
+model_k.fit(X_train, y_train)
+#model performance metrics
+y_pred_k = model_k.predict(X_test)
+accuracy_k = accuracy_score(y_test, y_pred_k)
+print(f"Accuracy of KNN Regression: {accuracy_k * 100:.2f}")
+f1 = f1_score(y_test, y_pred_k, average='weighted')
+print(f"F1 Score: {f1:.2f}")
+```
+
+## Confusion Matrix
+
+```{python}
+#| echo: false
+conf = confusion_matrix(y_test, y_pred_k)
+
+sns.heatmap(conf, annot=True, cbar=False, cmap = 'Blues')
+plt.title('Confusion Matrix Heatmap')
+plt.xlabel('Predicted Labels - Binary')
+plt.ylabel('True Labels - Binary')
+plt.show()
+```
+:::
+
+# Final Models
+
+## Hazardous Classification Model
+
+::: panel-tabset
+## Model
+
+-   Expect model to have high accuracy
+-   Overfitting less of an issue
+-   Offers feature importance
+-   Can be less interpretable
+-   Manages correlated features well
+
+```{python}
+#| code-fold: true
+feature_cols = ['H_(mag)', 'MOID_(au)',
+                'q_(au)', 'Q_(au)',
+                'period_(yr)', 'i_(deg)',
+                'a', 'e'
+]
+#train and test set
+X = filtered_set[feature_cols].values.astype(np.float32)
+y = (filtered_set['PHA'] == "Y").astype(int).values # 0 or 1
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=55, stratify=y
+)
+#model hyperparameters
+rf = RandomForestClassifier(
+    n_estimators=500,
+    class_weight='balanced',
+    random_state=55,
+    n_jobs=-1
+)
+
+rf.fit(X_train, y_train)
+#model performance metrics
+rf_probs = rf.predict_proba(X_test)[:, 1]
+rf_auc = roc_auc_score(y_test, rf_probs)
+
+print(f'Random Forest ROC AUC: {rf_auc:.4f}')
+#feature importance
+importances = rf.feature_importances_
+for col, imp in sorted(zip(feature_cols, importances), key=lambda x: -x[1]):
+    print(f"{col:<12}: {imp:.4f}")
+
+    y_pred = (rf_probs > 0.5).astype(int)
+
+```
+
+## Confusion Matrix
+
+-   This model performs well. However, it appears as though the initial model is likely overfit and requires some hyperparameter tuning.
+
+```{python}
+#| echo: false
+cm = confusion_matrix(y_test, y_pred)
+
+
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    xticklabels=["Pred 0", "Pred 1"],
+    yticklabels=["True 0", "True 1"]
+)
+
+plt.title("Confusion Matrix Heatmap")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.tight_layout()
 plt.show()
 ```
 
-## Plot and text
+## Hyperparameter Tuning
 
-::: columns
-::: {.column width="50%"}
--   Some text
+-   While the tuning process would lower accuracy and other metrics, it reduces the risk of the model being overfit to the training data.
 
--   goes here
-:::
-
-::: {.column width="50%"}
 ```{python}
-#| warning: false
-#| fig.width: 5.5
-fig, ax = plt.subplots(figsize=(5.5, 5.5 * 0.618))
-sns.boxplot(data=penguins, x='bill_length_mm', y='species', hue='species', ax=ax)
+#| code-fold: true
+#| #parameter grid
+param_grid_binary = {
+    "n_estimators": [200, 400, 600],
+    "max_depth": [50,75,100],
+    "min_samples_split": [50,75,100],
+    "min_samples_leaf": [50,75,100],
+    "max_features": ["sqrt", "log2",0.8],
+    "bootstrap": [True, False],
+    "class_weight": ["balanced"]
+}
+
+rf = RandomForestClassifier(random_state=55, n_jobs=-1)
+#Grid search cross validation with hyperparameters
+grid_binary = GridSearchCV(
+    rf,
+    param_grid=param_grid_binary,
+    scoring="roc_auc",
+    cv=5,
+    n_jobs=-1,
+    verbose=1
+)
+
+grid_binary.fit(X_train, y_train)
+#print best parameters and score
+print("Best params (Binary PHA):", grid_binary.best_params_)
+print("Best cross-val ROC AUC:", grid_binary.best_score_)
+#best model hyperparameters and associated model metrics
+best_rf_binary = grid_binary.best_estimator_
+yb_pred = best_rf_binary.predict(X_test)
+rf_probs = best_rf_binary.predict_proba(X_test)[:, 1]
+rf_auc = roc_auc_score(y_test, rf_probs)
+
+print("Binary PHA Test ROC AUC:", rf_auc)
+print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard"]))
+```
+
+## Tuning Confusion Matrix
+
+-   The model no longer acts as overfit as before, yet still performs better than the earlier models.
+
+```{python}
+#| echo: false
+cm = confusion_matrix(y_test, yb_pred)
+
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=["Not Hazard", "Hazard"],
+            yticklabels=["Not Hazard", "Hazard"])
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+plt.title("Binary PHA Confusion Matrix")
+plt.tight_layout()
 plt.show()
 ```
 :::
-:::
 
-# A new section...
+## Group Classification Model
 
-## Tables
+::: panel-tabset
+## Model
 
-If you want to generate a table, make sure it is in the HTML format (instead of Markdown or other formats), e.g.,
+-   The classification model also runs the risk of being overfit.
 
 ```{python}
-penguins.head().to_html()
+#| code-fold: true
+#encode labels
+le = LabelEncoder()
+
+filtered_set['orbit_label'] = le.fit_transform(filtered_set['Orbit_Class'])
+
+le.classes_
+#new train and test set
+X = filtered_set[feature_cols]
+y = filtered_set['orbit_label']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=55, stratify=y
+)
+#model with initial hyperparameters
+rf = RandomForestClassifier(
+    n_estimators=500,
+    max_depth=None,
+    class_weight ='balanced',
+    random_state=55,
+    n_jobs=-1
+)
+
+rf.fit(X_train, y_train)
+#model metrics
+y_pred = rf.predict(X_test)
+
+acc = accuracy_score(y_test, y_pred)
+
+print("Accuracy:", acc)
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred, target_names=le.classes_))
 ```
 
-## Images
+## Confusion Matrix
 
-![Image credit: Danielle Navarro, Percolate.](images/watercolour_sys02_img34_teacup-ocean.png){fig-align="center" width="500"}
+```{python}
+#| echo: false
+cm = confusion_matrix(y_test, y_pred)
 
-## Math Expressions {.smaller}
 
-You can write LaTeX math expressions inside a pair of dollar signs, e.g. \$\\alpha+\\beta\$ renders $\alpha + \beta$. You can use the display style with double dollar signs:
-
-```         
-$$\bar{X}=\frac{1}{n}\sum_{i=1}^nX_i$$
+sns.heatmap(
+    cm, annot=True, fmt="d", cmap="Blues",
+    xticklabels=le.classes_,
+    yticklabels=le.classes_
+)
+plt.xlabel("Predicted Class")
+plt.ylabel("True Class")
+plt.title("Orbit Class Confusion Matrix")
+plt.tight_layout()
+plt.show()
 ```
 
-$$
-\bar{X}=\frac{1}{n}\sum_{i=1}^nX_i
-$$
+## Hyperparameter Tuning
 
-Limitations:
+-   Additional hyperparameter tuning was performed to lower the overfit metrics the original model showed.
 
-1.  The source code of a LaTeX math expression must be in one line, unless it is inside a pair of double dollar signs, in which case the starting `$$` must appear in the very beginning of a line, followed immediately by a non-space character, and the ending `$$` must be at the end of a line, led by a non-space character;
+```{python}
+#| code-fold: true
+# model hyperparameters grid
+param_grid_multi = {
+    "n_estimators": [200, 400, 600],
+    "max_depth": [40,60,80],
+    "min_samples_split": [40,60,80],
+    "min_samples_leaf": [40,60,80],
+    "max_features": ["sqrt", "log2",0.8],
+    "bootstrap": [True, False],
+    "class_weight": ["balanced"]
+}
+rf_multi = RandomForestClassifier(random_state=55, n_jobs=-1)
+# grid search cross validation on the hyperparameters grid
+grid_multi = GridSearchCV(
+    rf_multi,
+    param_grid=param_grid_multi,
+    scoring="accuracy",
+    cv=5,
+    n_jobs=-1,
+    verbose=1
+)
+grid_multi.fit(X_train, y_train)
+# tuning best model metrics outputs
+best_rf_multi = grid_multi.best_estimator_
+y_pred_multi = best_rf_multi.predict(X_test)
+print("Best params (Multi-class Orbit):", grid_multi.best_params_)
+print("Best cross-val ROC AUC:", grid_multi.best_score_)
+print(classification_report(y_test, y_pred_multi, target_names=le.classes_))
+```
 
-2.  There should not be spaces after the opening `$` or before the closing `$`.
+## Tuning Confusion Matrix
 
-# Wrap up
+```{python}
+#| echo: false
+cm = confusion_matrix(y_test, y_pred_multi)
 
-## Feeling adventurous?
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=le.classes_, yticklabels=le.classes_)
+plt.xlabel("Predicted Class")
+plt.ylabel("True Class")
+plt.title("Orbit Class Confusion Matrix")
+plt.show()
+```
+:::
 
--   You are welcomed to use the default styling of the slides. In fact, that's what I expect majority of you will do. You will differentiate yourself with the content of your presentation.
+# Conclusion
 
--   But some of you might want to play around with slide styling. Some solutions for this can be found at https://quarto.org/docs/presentations/revealjs.
+## Conclusion
+
+-   While all models overall performed well, our decision to train and tune the Random Forest model resulted in an excellent model
+-   We feel confident our model could handle new data and predict any potential hazards well
+-   We also feel confident in our classification model's ability to group NEOs in their proper class groups
