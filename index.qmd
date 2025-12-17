@@ -1,8 +1,8 @@
 ---
-title: "Project Title"
+title: "Classifying Near Earth Objects"
 subtitle: "INFO 523 - Final Project"
 author: 
-  - name: "Team name - Team member 1, Team member 2,..."
+  - name: "Kylie Clinton, Trevor Snedden"
     affiliations:
       - name: "College of Information Science, University of Arizona"
 description: "Project description"
@@ -18,6 +18,298 @@ execute:
 jupyter: python3
 ---
 
+``` {python}
+import pandas as pd
+import numpy as np
+import re
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, LabelEncoder
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, roc_auc_score, classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.decomposition import PCA
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# read in data
+df = pd.read_csv('./data/kaggle_neo.csv')
+#filtering
+not_na_df =df[df['PHA'].notna()]
+filtered_set = not_na_df.drop(columns='Discovery Date (YYYY-MM-DD)')
+filtered_set.columns = [col.replace(' ', '_') for col in filtered_set.columns]
+filtered_set['binary_PHA'] = pd.get_dummies(filtered_set['PHA'], dtype=int)['Y']
+filtered_set = filtered_set.copy()
+filtered_set['Designation'] = filtered_set['Designation'].str.extract(r'\((?:\d{4}\s)?([A-Z]+\d+)\)')
+filtered_set = filtered_set[filtered_set['Orbit_Class'].isin(['Amor', 'Apollo', 'Aten'])].copy()
+filtered_set['a'] = (filtered_set['Q_(au)'] + filtered_set['q_(au)'])/2
+filtered_set['e'] = (filtered_set['Q_(au)'] - filtered_set['q_(au)']) / (filtered_set['Q_(au)'] + filtered_set['q_(au)'])
+```
+
 ## Abstract
 
-Add project abstract here.
+This project aims to classify Near-Earth Objects (NEOs) into their dynamical orbit groups using orbital data from the NASA NEO dataset hosted on Kaggle. After acquiring the dataset, a preprocessing pipeline was developed to clean missing values, convert categorical fields, and isolate the orbital elements most relevant to NEO classification, including semimajor axis, eccentricity, inclination, perihelion distance, aphelion distance, and orbital period. These features were selected because they directly define NASA’s established criteria for grouping NEOs into Amor, Apollo, Aten, and Atira classes.
+
+To determine an effective classification approach, the project evaluated three supervised machine learning models imported from the Scikit-Learn library. Testing began with **Logistic Regression,** which served as an initial baseline model. Following the regression model, a **K-Nearest Neighbors (KNN)** model was tested, which showed improved flexibility but was sensitive to feature scaling and class imbalance. Finally, a **RandomForestClassifier** was trained and tuned, leveraging ensemble decision trees to model nonlinear relationships and interactions among orbital elements. The Random Forest Classifier was able to consistently achieve the highest accuracy and the most balanced class-level performance, particularly in distinguishing groups with overlapping parameter ranges.
+
+Results indicate that the RandomForestClassifier provides the most reliable and robust method for orbit-class prediction in this dataset, as well as classifying NEO type. Its strong performance, resilience to noise, and clear feature importance rankings make it an ideal model choice for future extensions, including integrating additional physical characteristics or expanding the dataset using NASA’s Small-Body Database API.
+
+## Data Selection and Preparation
+
+This project utilized a Kaggle dataset which was sourced from NASA NEO dataset. This dataset was utilized due to already being filtered and structured with consistent formatting allowing for minimal feature engineering. To prepare the data, the dataset was inspected and uninformative data was removed to streamline the modeling process. The data was then filtered to include rows with complete orbital information along with valid orbit-class labels for classification. The next process was to convert any categorical labels into a machine readable format using label encoding for the modeling section.
+
+| Group | Definition | Description |
+|:-----------------------|:----------------------:|:-----------------------|
+| NECs | q\<1.3au, P\<200yrs | Near-Earth Comets |
+| NEAs | q\<1.3au | Near-Earth Asteroids |
+| Atiras | a\<1.0 au, Q\<0.983 au | NEAs whose orbits are contained entirely with the orbit of the Earth (named after asteroid 163693 Atira) |
+| Atens | a\<1.0 au, Q\>0.983 au | Earth-crossing NEAs with semi-major axes smaller than Earth's (named after asteroid 2062 Aten) |
+| Apollos | a\>1.0 au, q\<1.017 au | Earth-crossing NEAs with semi-major axes larger than Earth's (named after asteroid 1862 Apollo) |
+| Amors | a\>1.0 au, 1.017\<q\<1.3 au | Earth-approaching NEA's with orbits exterior to Earth's but interior to Mars' ( named aftger asteroid 1221 Amor) |
+| PHAs | MOID\<=0.05 au, H\<=22.0 | Potentially Hazardous Asteroids: NEAs whose minimum Orbit Interestion Distance (MOID) with the Earth is 0.05 au or less and whose absolute magnitude (H) is 22.0 or brighter |
+
+(q = perihelion distance, Q = aphelion distance, a = semi-major axis)
+
+-   **Designation** : Designation of NEO object
+-   **Discovery Date** : Date of Discovery
+-   **H (mag)** : Absolute Magnitude
+-   **MOID (au)** : Minimum Orbit Intersection Distance with Earth
+-   **q (au)** : perihelion distance
+-   **Q (au)** : aphelion distance
+-   **period (yr)** : Orbital Period (one full rotation)
+-   **i (deg)** : Orbital Inclination, tilt of orbital plane relative to earch in degrees
+-   **PHA** : Potentially hazardous (target variable)
+-   **Orbit Class** : Near Earth orbital class \*
+
+## Exploratory Data Analysis
+
+Exploratory data analysis was conducted to understand the distribution and relationships of orbital parameters prior to modeling. A condensed version of the EDA is shown in this report.
+
+``` {python}
+sns.set_style('whitegrid')
+plt.figure(figsize=(15,5))
+ax = sns.countplot(filtered_set, x='Orbit_Class', hue='PHA', palette=['green', 'red'])
+ax.bar_label(ax.containers[0])
+ax.bar_label(ax.containers[1])
+plt.title("PHA's per Orbit Class")
+plt.show()
+```
+
+The created pairwise scatter plots colored by orbit class demonstrated clear clustering of Amor, Apollo, and Aten objects in orbital parameter space, particularly when examining perihelion distance versus semimajor axis. Class imbalance was also observed across groups, with Aten objects appearing less frequently than other groups, motivating the use of stratified sampling and balanced classification approaches. The knowledge of the class imbalance, potential feature correlations, and general knowledge of the dataset allows for effective model creation and the use of models that work well with the dataset and its features.
+
+``` {python}
+palette = sns.color_palette("husl", filtered_set["Orbit_Class"].nunique())
+sns.scatterplot(
+    data=filtered_set,
+    x='a', y='e',
+    hue='Orbit_Class',
+    palette=palette,
+    alpha=0.8,
+    legend='full'
+)
+
+#need an overlay x isn't showing properly
+sns.scatterplot(
+    data=filtered_set[filtered_set['PHA']=='Y'],
+    x='a', y='e',
+    s=70,
+    marker='X',
+    hue= 'Orbit_Class',
+    palette=palette,
+    label='PHA= Y',
+    legend=False,
+    edgecolor='black',
+    linewidth=0.3
+)
+
+# Earth orbit reference
+plt.axvline(1, color='gray', linestyle='--', linewidth=1)
+plt.text(1.02, 0.02, "Earth Orbit (1 AU)", rotation=90, va='bottom', ha='left', fontsize=9)
+
+# q = 1.017 AU boundary curve
+a_line = np.linspace(0.5, 3, 300)
+e_line = 1 - 1.017 / a_line
+plt.plot(a_line, e_line, color='black', linestyle='--', linewidth=1)
+plt.text(2.8, 0.65, "q = 1.017 AU (Earth-crossing limit)", ha='right', va='center', fontsize=9)
+
+# Labels and limits
+plt.xlabel("Semi-major Axis (a, AU)")
+plt.ylabel("Eccentricity (e)")
+plt.title("Near-Earth Object Orbit Class Map")
+plt.xlim(0.5, 3)
+plt.ylim(0, 1)
+plt.legend(title="Orbit Class", fontsize='small')
+plt.show()
+```
+
+## Modeling Approach
+
+Three supervised learning models were evaluated for this project. Logistic regression was first evaluated and was used to establish a linear baseline. The following model evaluated was the K-Nearest Neighbor to introduce nonlinear, distance based classification. These models were scaled appropriately using StandardScaler. Lastly, the final and chosen model was a Random Forest Classifier. This model was trained and evaluated for both orbit class and hazardous prediction task since its ability to model nonlinear feature interactions and well as handle class imbalance efficiently. The models were put into a generic pipeline with no or minimal hyperparameter selections outside the defaults. The goal was to get baseline performance prior to getting the optimized model. Base models also run quickly, and cross validation could add computational complexity, which is why none was performed until the final model was selected.
+
+The models were evaluated using with a mixture of metrics with accuracy, F1 score, ROC AUC, as well as confusion matrices. The combination of factors, including hyperparameter tuning of the best models, allows for informed decision-making and understanding the models' true capabilities for predicting NEOs as hazardous or which group they belong to. Below shows most of the modeling process, but only the tuned Random Forest models are shown to keep outputs simple.
+
+## Results
+
+``` {python}
+X = filtered_set.drop(['PHA', 'binary_PHA'], axis=1)
+y = filtered_set['binary_PHA']
+cat_cols = X.select_dtypes(include=['object']).columns
+num_cols = X.select_dtypes(include=['number']).columns
+preprocess = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), num_cols),
+        ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
+)
+model = Pipeline([
+    ("prep", preprocess),
+    ("logr", LogisticRegression())
+])
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state=55)
+model.fit(X_train, y_train)
+y_pred = model.predict(X_test)
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy of Logistic Regression: {accuracy * 100:.2f}")
+f1 = f1_score(y_test, y_pred, average='weighted')
+print(f"F1 Score: {f1:.2f}")
+conf = confusion_matrix(y_test, y_pred)
+sns.heatmap(conf, annot=True, cbar=False, cmap = 'Blues')
+plt.title('Confusion Matrix Heatmap')
+plt.xlabel('Predicted Labels - Binary')
+plt.ylabel('True Labels - Binary')
+plt.show()
+
+#KNN
+preprocess = ColumnTransformer(
+    transformers=[
+        ("num", StandardScaler(), num_cols),
+        ("cat", OneHotEncoder(handle_unknown='ignore'),cat_cols)],
+)
+model_k = Pipeline([
+    ("prep", preprocess),
+    ("knn", KNeighborsClassifier(n_neighbors=2))
+])
+model_k.fit(X_train, y_train)
+
+y_pred_k = model_k.predict(X_test)
+accuracy_k = accuracy_score(y_test, y_pred_k)
+print(f"Accuracy of KNN Regression: {accuracy_k * 100:.2f}")
+f1 = f1_score(y_test, y_pred_k, average='weighted')
+print(f"F1 Score: {f1:.2f}")
+conf = confusion_matrix(y_test, y_pred_k)
+sns.heatmap(conf, annot=True, cbar=False, cmap = 'Blues')
+plt.title('Confusion Matrix Heatmap')
+plt.xlabel('Predicted Labels - Binary')
+plt.ylabel('True Labels - Binary')
+plt.show()
+
+#Random Forest
+#hyperparameter tuning
+param_grid_binary = {
+    "n_estimators": [200, 400, 600],
+    "max_depth": [50,75,100],
+    "min_samples_split": [50,75,100],
+    "min_samples_leaf": [50,75,100],
+    "max_features": ["sqrt", "log2",0.8],
+    "bootstrap": [True, False],
+    "class_weight": ["balanced"]
+}
+feature_cols = ['H_(mag)', 'MOID_(au)',
+                'q_(au)', 'Q_(au)',
+                'period_(yr)', 'i_(deg)',
+                'a', 'e'
+]
+X = filtered_set[feature_cols].values.astype(np.float32)
+y = (filtered_set['PHA'] == "Y").astype(int).values # 0 or 1
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=55, stratify=y
+)
+rf = RandomForestClassifier(random_state=55, n_jobs=-1)
+
+grid_binary = GridSearchCV(
+    rf,
+    param_grid=param_grid_binary,
+    scoring="roc_auc",
+    cv=5,
+    n_jobs=-1,
+    verbose=1
+)
+
+grid_binary.fit(X_train, y_train)
+
+print("Best params (Binary PHA):", grid_binary.best_params_)
+print("Best cross-val ROC AUC:", grid_binary.best_score_)
+
+best_rf_binary = grid_binary.best_estimator_
+yb_pred = best_rf_binary.predict(X_test)
+rf_probs = best_rf_binary.predict_proba(X_test)[:, 1]
+rf_auc = roc_auc_score(y_test, rf_probs)
+
+print("Binary PHA Test ROC AUC:", rf_auc)
+print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard"]))
+
+best_rf_binary = grid_binary.best_estimator_
+yb_pred = best_rf_binary.predict(X_test)
+rf_probs = best_rf_binary.predict_proba(X_test)[:, 1]
+rf_auc = roc_auc_score(y_test, rf_probs)
+
+print("Binary PHA Test ROC AUC:", rf_auc)
+print(classification_report(y_test, yb_pred, target_names=["Not Hazard", "Hazard"]))
+
+# need to label encode orbit classes
+le = LabelEncoder()
+
+filtered_set['orbit_label'] = le.fit_transform(filtered_set['Orbit_Class'])
+
+le.classes_
+
+X = filtered_set[feature_cols]
+y = filtered_set['orbit_label']
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=55, stratify=y
+)
+
+#Class prediction 
+#Hyperparameter tuning
+param_grid_multi = {
+    "n_estimators": [200, 400, 600],
+    "max_depth": [40,60,80],
+    "min_samples_split": [40,60,80],
+    "min_samples_leaf": [40,60,80],
+    "max_features": ["sqrt", "log2",0.8],
+    "bootstrap": [True, False],
+    "class_weight": ["balanced"]
+}
+rf_multi = RandomForestClassifier(random_state=55, n_jobs=-1)
+
+grid_multi = GridSearchCV(
+    rf_multi,
+    param_grid=param_grid_multi,
+    scoring="accuracy",
+    cv=5,
+    n_jobs=-1,
+    verbose=1
+)
+grid_multi.fit(X_train, y_train)
+best_rf_multi = grid_multi.best_estimator_
+y_pred_multi = best_rf_multi.predict(X_test)
+print("Best params (Multi-class Orbit):", grid_multi.best_params_)
+print("Best cross-val ROC AUC:", grid_multi.best_score_)
+print(classification_report(y_test, y_pred_multi, target_names=le.classes_))
+
+cm = confusion_matrix(y_test, y_pred_multi)
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=le.classes_, yticklabels=le.classes_)
+plt.xlabel("Predicted Class")
+plt.ylabel("True Class")
+plt.title("Orbit Class Confusion Matrix")
+plt.show()
+```
+
+## Conclusion
+
+This project assessed three models for classifying Near-Earth Objects based on orbital features. Logistic Regression performed well with 90.83% accuracy and an F1 score of 0.9, while KNN followed with 88.07% accuracy and an F1 score of 0.87. The Random Forest Classifier achieved an impressive tuned ROC AUC of 0.93 and a tuned f1-score of 0.93 and clearly outperformed the baseline models. Its feature importance rankings identified MOID, absolute magnitude, and key orbital elements such as q, e, and Q as the most influential predictors, consistent with known NEO dynamical behavior. Overall, the Random Forest provided the most accurate and physically interpretable model for this task. To further expand the Random Forest's capabilities, this model achieved a tuned 90% accuracy, tuned .907 ROC-AUC in predicting the NEO group to which the objects belong. To account for any potential overfitting of the models, hyperparameter tuning was performed on the final models. This process lowered the accuracy and ROC-AUC, but the models still perform incredibly well at accuracy and ROC-AUC. These experiments show that using the Random Forest model can be extended to explore live APIs from NASA to quickly determine risk and object type. The results of this project demonstrate the final models' abilities to predict and group NEOs to their appropriate group and hazardous status.

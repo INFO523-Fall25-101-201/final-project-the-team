@@ -1,11 +1,11 @@
 ---
-title: "Proposal title"
-subtitle: "Proposal"
+title: "Classifying Near Earth Objects"
+subtitle: "Detecting and Classsifying Hazardous NEO's"
 author: 
-  - name: "Team Name - Team member 1, Team member 2,..."
+  - name: "The Team - Clinton, Kylie and Snedden, Trevor"
     affiliations:
       - name: "College of Information Science, University of Arizona"
-description: "Project description"
+description: "Detection and Classification of Near-Earth Objects (NEO)"
 format:
   html:
     code-tools: true
@@ -23,6 +23,7 @@ jupyter: python3
 #| label: load-pkgs
 #| message: false
 import numpy as np
+import pandas as pd
 ```
 
 ## Dataset
@@ -30,16 +31,51 @@ import numpy as np
 ```{python}
 #| label: load-dataset
 #| message: false
+df = pd.read_csv('./data/kaggle_neo.csv')
+print(df.head())
+df.info()
+df.shape
 ```
 
-A brief description of your dataset including its provenance, dimensions, etc. as well as the reason why you chose this dataset.
+Near-Earth Objects (NEOs) are asteroids and comets whose orbits cross within 1.3 astronomical units of Earth. Monitoring and classifying these objects is critical for planetary defense as well as gaining insight into the evolution of our solar system.
 
-Make sure to load the data and use inline code for some of this information.
+This project aims to find and utilize the best-fit machine learning models to classify NEOs as hazardous or non-hazardous based on their metrics and orbital features. We aim to understand what makes an object potentially dangerous and demonstrate how machine learning can support real-world space research. NEO definitions are annotated in `./data/README.md`
+
+This dataset is pulled from Kaggle, showing NASA NEO data. NASA documents them to determine any potential hazards. The variables represent the size, velocity, and orbital parameters, which will be used during model creation. We selected this dataset due to it being a large dataset sourced from NASA's official website. \*\*Future tests may include NASA APIs with unclassified NEOs
 
 ## Questions
 
-The two questions you want to answer.
+Primary goal: Classify NEO candidates as hazardous or non-hazardous?
+
+Secondary goal: Out of hazardous NEOs, which categories of bodies do they belong to?
 
 ## Analysis plan
 
--   A plan for answering each of the questions including the variables involved, variables to be created (if any), external data to be merged in (if any).
+-   Near-Earth Objects (NEOs) are asteroids and comets whose orbits cross within 1.3 astronomical units of Earth. Monitoring and classifying these objects is critical for planetary defense as well as gaining insight into the evolution of our solar system. NASA provides a robust public dataset of NEO objects, which include measurements, size, velocity, and orbital parameters.
+-   This project will utilize machine learning models to classify NEOs as hazardous or non-hazardous based on their metrics and orbital features. We aim to understand what makes an object potentially dangerous and demonstrate how machine learning can support real-world space research.
+
+#### Objectives:
+
+1.  Collect and preprocess NEO data from NASA and or Kaggle
+2.  Train and evaluate classification models to predict status
+3.  Identify which features are most influential
+4.  Create visuals showing metrics and evaluations along with NEO risk patterns and groupings
+
+#### Methodology
+
+-   The team will utilize Agile methodology to expand testing parameters continuously to enable us to:
+
+1.  Collect and preprocess datasets.
+2.  Explore features such as size, velocity, and orbit.
+3.  Conduct ML trials to find the best fit models (Random Forest, XGBoost, KNN) to classify hazardous asteroids or the group
+4.  2D/3D visualize orbit paths and distribution of NEOs
+
+## Tentative Schedule:
+
+| Week | Goal | Person(s) |
+|:----------------:|:--------------------------------:|:------------------:|
+| Week 1 | Finish pre-processing the data and revise the proposal | Kylie & Trevor |
+| Week 2 | Build initial models and decide which ones to proceed with | Kylie & Trevor |
+| Week 3 | Refine the selected model and begin group category model | Kylie & Trevor |
+| Week 4 | Finalize second models, start creating visuals | Kylie & Trevor |
+| Week 5-6 | Refine code, create and rehearse presentation | Kylie & Trevor |
